@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anti-Pattern Detector | Technical Debt Intelligence</title>
+  <meta name="description" content="Analyze any GitHub Python repository for anti-patterns, technical debt, and code complexity in seconds." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── NAV ─────────────────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">⬡</span>
+      <span class="nav-title">DebtLens</span>
+    </div>
+    <div class="nav-links">
+      <a href="#analyzer">Analyze</a>
+      <a href="#results" id="nav-results" style="display:none">Results</a>
+      <a href="https://github.com" target="_blank" class="nav-gh">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+  <section class="hero" id="analyzer">
+    <div class="hero-bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="grid-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-badge">🔬 Intelligent Code Analysis</div>
+      <h1 class="hero-title">
+        Detect Technical Debt<br />
+        <span class="gradient-text">Before It Detects You</span>
+      </h1>
+      <p class="hero-sub">
+        Paste any public Python GitHub repository URL. We'll scan every file for anti-patterns,
+        measure cyclomatic complexity, and compute a full Technical Debt Index in seconds.
+      </p>
+
+      <!-- Input Card -->
+      <div class="input-card">
+        <div class="input-row">
+          <div class="input-icon">⌥</div>
+          <input
+            type="url"
+            id="repo-url"
+            class="repo-input"
+            placeholder="https://github.com/owner/repository"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="analyze-btn" id="analyze-btn" onclick="triggerAnalysis()">
+            <span class="btn-text">Analyze</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+        <p class="input-hint">e.g. https://github.com/psf/requests &nbsp;·&nbsp; Must be a public repo</p>
+      </div>
+
+      <!-- Status bar (hidden until analysis starts) -->
+      <div class="status-bar" id="status-bar" style="display:none">
+        <div class="status-spinner"></div>
+        <span id="status-text">Cloning repository…</span>
+        <button id="cancel-btn" onclick="" style="display:none;margin-left:1rem;padding:0.3rem 0.9rem;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#ef4444;border-radius:6px;cursor:pointer;font-size:0.82rem;">✕ Cancel</button>
+      </div>
+      <div class="error-bar" id="error-bar" style="display:none">
+        <span>⚠</span> <span id="error-text"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RESULTS ──────────────────────────────────────────────────────────── -->
+  <section class="results-section" id="results" style="display:none">
+    <div class="container">
+
+      <!-- Repo Header -->
+      <div class="repo-header">
+        <div class="repo-icon">⬡</div>
+        <div>
+          <p class="repo-label">Analyzed Repository</p>
+          <a class="repo-url" id="res-url" href="#" target="_blank">#</a>
+        </div>
+        <div class="tdi-badge" id="tdi-badge"></div>
+      </div>
+
+      <!-- ── KPI CARDS ────────────────────────────────────────────────────── -->
+      <div class="kpi-grid">
+        <div class="kpi-card" id="kpi-loc">
+          <div class="kpi-icon">📄</div>
+          <div class="kpi-value" id="val-loc">—</div>
+          <div class="kpi-label">Total Lines of Code</div>
+        </div>
+        <div class="kpi-card" id="kpi-debt">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value" id="val-debt">—</div>
+          <div class="kpi-label">Total Debt Score</div>
+        </div>
+        <div class="kpi-card" id="kpi-tdi">
+          <div class="kpi-icon">📉</div>
+          <div class="kpi-value" id="val-tdi">—</div>
+          <div class="kpi-label">Normalized TDI</div>
+        </div>
+        <div class="kpi-card" id="kpi-files">
+          <div class="kpi-icon">📂</div>
+          <div class="kpi-value" id="val-files">—</div>
+          <div class="kpi-label">Files Analyzed</div>
+        </div>
+      </div>
+
+      <!-- ── CHARTS ROW ───────────────────────────────────────────────────── -->
+      <div class="charts-row">
+
+        <!-- Anti-pattern distribution -->
+        <div class="chart-card" id="chart-patterns">
+          <div class="chart-card-header">
+            <h2 class="chart-title">🧩 Anti-Pattern Distribution</h2>
+            <p class="chart-sub">Number of files affected per pattern type</p>
+          </div>
+          <div class="bar-chart-container" id="pattern-bars"></div>
+        </div>
+
+        <!-- Top files by debt score -->
+        <div class="chart-card" id="chart-topfiles">
+          <div class="chart-card-header">
+            <h2 class="chart-title">🔥 Top Files by Debt Score</h2>
+            <p class="chart-sub">Highest contributing files to technical debt</p>
+          </div>
+          <div class="bar-chart-container" id="debt-bars"></div>
+        </div>
+
+      </div>
+
+      <!-- ── COMPLEXITY SCATTER ───────────────────────────────────────────── -->
+      <div class="card full-width-card" id="chart-scatter">
+        <div class="chart-card-header">
+          <h2 class="chart-title">🌡️ Complexity vs. LOC</h2>
+          <p class="chart-sub">Each bubble = one file · Size = debt score · Color = risk level</p>
+        </div>
+        <div class="scatter-container" id="scatter-plot"></div>
+      </div>
+
+      <!-- ── FILE TABLE ───────────────────────────────────────────────────── -->
+      <div class="card full-width-card">
+        <div class="chart-card-header">
+          <h2 class="chart-title">📋 File-by-File Breakdown</h2>
+          <p class="chart-sub">All flagged files sorted by debt score — click a row to expand metrics</p>
+        </div>
+        <div class="table-wrapper">
+          <table class="file-table" id="file-table">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>LOC</th>
+                <th>Max CC</th>
+                <th>Methods</th>
+                <th>Debt Score</th>
+                <th>Anti-Patterns</th>
+              </tr>
+            </thead>
+            <tbody id="file-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ML PREDICTION ────────────────────────────────────────────────── -->
+      <div class="card full-width-card ml-card">
+        <div class="ml-card-inner" style="align-items: center; padding-bottom: 0;">
+          <div class="ml-icon-wrap">
+            <span class="ml-icon">🤖</span>
+          </div>
+          <div class="ml-text">
+            <h2 class="ml-title">Machine Learning Risk Prediction</h2>
+            <p class="ml-desc">
+              Powered by Random Forest Model v3
+            </p>
+          </div>
+        </div>
+        <div id="ml-result" class="ml-result-placeholder" style="margin-top: 1rem;">
+          Result will appear here after analysis
+        </div>
+      </div>
+
+    </div><!-- /container -->
+  </section>
+
+  <!-- ── FOOTER ───────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <span>DebtLens · Powered by Radon &amp; Flask</span>
+    <span class="footer-sep">·</span>
+    <span>Anti-Pattern Detection Engine v1.0</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
